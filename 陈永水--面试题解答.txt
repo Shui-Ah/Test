@@ -1,0 +1,64 @@
+在hardware/rockchip/camera下，问：
+
+1、执行如下命令不报错
+git apply --check 0001-Add-JXH62-camera-driver.patch
+执行如下命令可以打上patch
+git am 0001-Add-JXH62-camera-driver.patch
+而执行如下命令也不报错 		//意味着补丁文件的格式是正确的
+git apply --check 0002-Modify-cam_board_rk3326.xml-for-JXH62-camera.patch
+执行如下命令却无法打上patch？	//可能是补丁格式不匹配、遇到冲突或者空白符误用
+git am 0002-Modify-cam_board_rk3326.xml-for-JXH62-camera.patch
+
+
+2、应该如何处理？
+
+Linux环境及git环境：（1）Ubuntu 18.04.4LTS  （2）git version 2.17.1
+
+处理过程
+首先执行按顺序执行了如下步骤：
+（1）git apply --check 0001-Add-JXH62-camera-driver.patch
+（2）git am 0001-Add-JXH62-camera-driver.patch
+（3）git apply --check 0002-Modify-cam_board_rk3326.xml-for-JXH62-camera.patch
+（4）git am 0002-Modify-cam_board_rk3326.xml-for-JXH62-camera.patch
+
+执行第（4）发现报错误，经过思考执行如下步骤：
+（1）检查冲突，手动修改Config/cam_board_rk3326.xml里对应0002补丁的内容
+	（SensorName、SensorGpioPwdn 的 ioname、SensorOrientation、SensorPhy 的 lane）
+（2）执行git add Config/cam_board_rk3326.xml 暂存当前修改
+（3）执行git commit -m "Save current changes"提交当前修改到本地仓库
+（4）执行git am --continue发现可打上补丁
+
+
+与同学思考交流之后写出整体流程：
+（1）git apply --check 0001-Add-JXH62-camera-driver.patch
+（2）git am 0001-Add-JXH62-camera-driver.patch
+（3）patch -p1 < 0002-Modify-cam_board_rk3326.xml-for-JXH62-camera.patch 	//将补丁打到本地
+（4）报错，解冲突 			//根据补丁文件手动修改Config/cam_board_rk3326.xml文件
+（5）patch -p1 < 0002-Modify-cam_board_rk3326.xml-for-JXH62-camera.patch 	//再次打补丁，成功 
+（6）git add Config/cam_board_rk3326.xml 			//将更改的文件提交暂存区
+（7）git commit -m "[PATCH] Modify cam_board_rk3326.xml for JXH62 camera" //提交当前修改到本地仓库
+（8）git remote add origin git@github.com:user/new-repo.git 				//将远程仓库关联到本地
+（9）git branch -a 	//查看git分支
+ 	 remotes/m/x405_vst
+  	 remotes/rk/develop
+  	 remotes/rk/rk3126c-oreo-mr1-gms-express-baseline
+  	 remotes/rk/rk33/mid/8.1/develop
+  	 remotes/rk/rk3368-oreo-mr1-gms-express-baseline
+（10）git push origin rk/develop 		 //提交本地变更到对应分支
+（11）git log   //查看提交记录
+（12）git format-patch -1 3ed5cce66a1d0dc4fcd2ef36166402999516cfc8   //根据提交的哈希值生成一个补丁
+   		
+
+使用此生成的新patch即可让其如同执行git am 0001-Add-JXH62-camera-driver.patch一样自动化
+
+
+
+
+
+
+
+
+
+
+
+
